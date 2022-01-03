@@ -38,8 +38,8 @@ public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHan
             case "getPermission":
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                        String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-                        this.activity.requestPermissions(permissions, PERMISSION_CODE);
+                        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                        ActivityCompat.requestPermissions(context, permissions, PERMISSION_CODE);
                     }
                 }
                 break;
@@ -53,8 +53,8 @@ public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHan
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                        String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-                        this.activity.requestPermissions(permissions, PERMISSION_CODE);
+                        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                        ActivityCompat.requestPermissions(context, permissions, PERMISSION_CODE);
                     } else {
                         downloadId = startDownload(url,fileName,directory,originName,headers);
                     }
