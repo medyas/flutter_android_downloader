@@ -10,6 +10,8 @@ import android.os.Build;
 import android.os.Environment;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.util.Map;
@@ -17,10 +19,12 @@ import java.util.Map;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 
-public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHandler  {
+public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHandler {
     private final Context context;
     private final DownloadManager manager;
     private final Activity activity;
+
+    static final int PERMISSION_CODE = 1000;
 
     DownloadMethodChannelHandler(Context context, DownloadManager manager, Activity activity) {
         this.context = context;
@@ -30,38 +34,30 @@ public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHan
 
     @Override
     public void onMethodCall(MethodCall call, @NonNull MethodChannel.Result result) {
-        int PERMISSION_CODE = 1000;
+
         switch (call.method) {
             case "getPlatformVersion":
                 result.success("Android " + Build.VERSION.RELEASE);
                 break;
             case "getPermission":
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-                        ActivityCompat.requestPermissions(context, permissions, PERMISSION_CODE);
-                    }
-                }
+                boolean p = requestPermissions();
+                result.success(p);
                 break;
             case "download":
-                Long downloadId = null;
                 String url = call.argument("url");
                 String fileName = call.argument("fileName");
                 String directory = call.argument("directory");
                 String originName = call.argument("originName");
-                Map<String,String> headers = call.argument("headers");
+                Map<String, String> headers = call.argument("headers");
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-                        ActivityCompat.requestPermissions(context, permissions, PERMISSION_CODE);
-                    } else {
-                        downloadId = startDownload(url,fileName,directory,originName,headers);
-                    }
-                } else {
-                    downloadId = startDownload(url,fileName,directory,originName,headers);
+               boolean permission = requestPermissions();
+                if (permission) {
+                    Long downloadId = startDownload(url, fileName, directory, originName, headers);
+                    result.success(downloadId);
+                    return;
                 }
-                result.success(downloadId);
+                result.success(null);
+
                 break;
             default:
                 result.notImplemented();
@@ -69,18 +65,29 @@ public class DownloadMethodChannelHandler implements MethodChannel.MethodCallHan
         }
     }
 
+    private boolean requestPermissions() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                ActivityCompat.requestPermissions(activity, permissions, PERMISSION_CODE);
+                return false;
+            }
+        }
+        return true;
+    }
+
     private long startDownload(String url, String fileName, String directory, String originName, Map<String, String> headers) {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-        if(headers!=null){
-            for (String key:headers.keySet()){
-                request.addRequestHeader(key,headers.get(key));
+        if (headers != null) {
+            for (String key : headers.keySet()) {
+                request.addRequestHeader(key, headers.get(key));
             }
         }
         request.allowScanningByMediaScanner();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-        }else {
-            request.setDestinationUri(Uri.fromFile(new File(directory+"/"+fileName)));
+        } else {
+            request.setDestinationUri(Uri.fromFile(new File(directory + "/" + fileName)));
         }
         request.setTitle(fileName);
         request.setAllowedOverRoaming(true);

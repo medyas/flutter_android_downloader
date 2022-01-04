@@ -68,9 +68,11 @@ public class FlutterAndroidDownloaderPlugin implements FlutterPlugin , ActivityA
 
   @Override
   public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+    activity = binding.getActivity();
   }
 
   @Override
   public void onDetachedFromActivity() {
+    activity = null;
   }
 }
