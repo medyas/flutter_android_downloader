@@ -13,8 +13,8 @@ class FlutterAndroidDownloader {
     return await _channel.invokeMethod('getPlatformVersion');
   }
 
-  static Future<bool> getPermission() async {
-    await _channel.invokeMethod('getPermission');
+  static Future<bool?> getPermission() async {
+    return await _channel.invokeMethod('getPermission');
   }
 
   static Stream _streamSubscription = const Stream.empty();
